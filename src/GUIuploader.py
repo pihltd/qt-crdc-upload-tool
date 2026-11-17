@@ -5,6 +5,7 @@
 import os
 from pathlib import Path
 import logging
+import sys
 
 from bento.common.utils import get_logger, LOG_PREFIX, get_time_stamp
 from common.constants import UPLOAD_TYPE, S3_BUCKET, FILE_NAME_DEFAULT, BATCH_STATUS, DRY_RUN, \
@@ -21,7 +22,7 @@ from common.upload_heart_beater import UploadHeartBeater
 
 
 #PyQT6 imports
-from GUIUploaderClass import GuiUploader
+from GUIUploaderClass import GuiUploader, StdOutRedirector
 from PyQt6.QtWidgets import QApplication, QMainWindow, QFileDialog
 #from PyQt6.QtCore import QSize
 #from PyQt6.QtGui import QTextCursor
@@ -32,7 +33,7 @@ if LOG_PREFIX not in os.environ:
 
 log = get_logger('FileLoader')
 
-class MainWindow(QMainWindow, GuiUploader):
+class MainWindow(QMainWindow, GuiUploader, StdOutRedirector):
     def __init__(self):
         super().__init__()
         self.resize(640,500)
@@ -40,11 +41,16 @@ class MainWindow(QMainWindow, GuiUploader):
         self.windowSetup(self)
         self.config = None
         self.s3_manifest_url = None
-        app_name = 'TEMP_NAME'
-        formatter = logging.Formatter(f'<14>1 %(asctime)s.%(msecs)03dZ - {app_name} %(process)d - - %(levelname)s: (%(name)s) %(message)s',
-                                          "%Y-%m-%dT%H:%M:%S")
-        self.info.setFormatter(formatter)
-        logging.getLogger().addHandler(self.info)
+        
+        # Displaying logging info Approach #1
+        #app_name = 'TEMP_NAME'
+        #formatter = logging.Formatter(f'<14>1 %(asctime)s.%(msecs)03dZ - {app_name} %(process)d - - %(levelname)s: (%(name)s) %(message)s',"%Y-%m-%dT%H:%M:%S")
+        #self.info.setFormatter(formatter)
+        #logging.getLogger().addHandler(self.info)
+        
+        # Displaying logging inf Approach #2
+        sys.stdout = StdOutRedirector(self.info)
+        sys.stderr = StdOutRedirector(self.info)
         
         
 
@@ -52,7 +58,10 @@ class MainWindow(QMainWindow, GuiUploader):
         configDialog = QFileDialog(self)
         configDialog.setFileMode(QFileDialog.FileMode.ExistingFiles)
         configDialog.setViewMode(QFileDialog.ViewMode.Detail)
-        configDialog.setDirectory(os.path.expanduser("~"))
+        #TODO: Remove the setDirectory to COTC30 below, that's just for development convenience
+        #configDialog.setDirectory(os.path.expanduser("~"))
+        configDialog.setDirectory(os.path.expanduser(r"C:\Users\pihltd\Documents\VMShare\ICDC\COTC030"))
+        #
         if configDialog.exec():
             fileNames = configDialog.selectedFiles()
             self.configFile = str(Path(fileNames[0]))
@@ -146,6 +155,10 @@ class MainWindow(QMainWindow, GuiUploader):
                                 for i, file_info in enumerate(newBatch["files"]):
                                     file_list[i][FILE_ID_DEFAULT] = file_info.get(FILE_ID_DEFAULT)
                             process_manifest_file(log, self.config.data.copy(), validator.has_file_id, file_list, validator.manifest_rows, self.s3_manifest_url)  
+                            #
+                            # Progress bar?
+                            #self.prog_bar.update(self.prog_bar.bytes_transferred)
+                            # 
                     # stop heartbeat after uploading completed
                     if upload_heart_beater:
                         upload_heart_beater.stop()

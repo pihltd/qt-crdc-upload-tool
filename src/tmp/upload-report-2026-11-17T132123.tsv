@@ -1,3 +1,2 @@
 fileID	file_name	file_size	md5sum	succeeded	errors	internal_file_name	skipped
 cfadead0-693a-5f2f-b54c-bcb35eda5510	SRR34826140_1.fastq.gz	1609515484	967cf9f104a145ce3a56dfbe49e61de8	True		SRR34826140_1.fastq.gz	False
-9d1089bb-aa4f-5c18-b4e5-938eb96cfc9e	SRR34826140_2.fastq.gz	1685600112	c1c287ee480bb3659d16c1ec054dc3e1	True		SRR34826140_2.fastq.gz	False

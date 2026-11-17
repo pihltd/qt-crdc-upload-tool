@@ -132,6 +132,10 @@ class Copier:
             with open(org_url, 'rb') as stream, create_progress_bar() as progress:
                 task_id = progress.add_task("Uploading...", total=org_size)
                 progress_callback = ProgressCallback(org_size, progress, task_id)
+                #
+                #  This may be where the progress bar call goes
+                #
+                #
                 if org_size <= self.MULTI_PART_CHUNK_SIZE * 50: # less than or equal to 5G, call auto multipart upload
                     self.bucket.upload_file_obj(stream, key, progress_callback, file_name, t_config)
                 else:

@@ -1,8 +1,9 @@
 from PyQt6.QtWidgets import QApplication,  QMainWindow,  QVBoxLayout, QHBoxLayout, QWidget, QLabel, QPushButton, QFileDialog, QListWidget, QTextEdit, QProgressBar
 from PyQt6.QtCore import QSize
-#from PyQt6.QtGui import QPainter
+from PyQt6.QtGui import QTextCursor
 
 from upload_config import Config
+from common.progress_bar import ProgressCallback
 
 import logging
 
@@ -15,12 +16,36 @@ from common.constants import UPLOAD_TYPE, UPLOAD_TYPES, FILE_NAME_DEFAULT, FILE_
     API_URL, TOKEN, SUBMISSION_ID, FILE_DIR, FILE_MD5_FIELD, PRE_MANIFEST, FILE_NAME_FIELD, FILE_SIZE_FIELD, RETRIES, OVERWRITE, \
     DRY_RUN, TYPE_FILE, FILE_ID_FIELD, OMIT_DCF_PREFIX, S3_START, FROM_S3, HEARTBEAT_INTERVAL_CONFIG, CLI_VERSION, ARCHIVE_MANIFEST
     
-#class UploadProgressBar(QProgressBar):
-#    def __init__(self):
-#        super().__init__()
-#        prog_bar = QProgressBar(self)
-#        prog_bar.setGeometry(50, 100, 250, 30)
-#        prog_bar.setValue(0)
+class UploadProgressBar(QProgressBar):
+    def __init__(self):
+        super().__init__()
+        self.prog_bar = QProgressBar(self)
+        self.prog_bar.setGeometry(50, 100, 250, 30)
+        self.prog_bar.setValue(0)
+        #pc = ProgressCallback()
+        #self.bytes_transferred = pc.bytes_transferred
+        
+    def update(self, updatevalue):
+        currentvalue = self.prog_bar.value()
+        self.prog_bar.setValue(currentvalue+updatevalue)
+        
+    def reset(self):
+        self.prog_bar.setValue(0)
+
+class StdOutRedirector():
+    #https://medium.com/@nugroho.wijatmiko/real-time-logging-with-pyqt6-78410e67860c
+    def __init__(self, text_widget):
+        self.textwidget = text_widget
+        
+    def write(self, msg):
+        self.textwidget.moveCursor(QTextCursor.MoveOperation.End)
+        self.textwidget.insertPlainText(msg)
+        self.textwidget.moveCursor(QTextCursor.MoveOperation.End)
+        
+    def flush(self):
+        pass
+
+
     
 class QTextEditLogger(logging.Handler):
     def __init__(self, parent):
@@ -137,25 +162,31 @@ class GuiUploader(object):
         
         # Add upload information section
         self.infolabel = QLabel("Uploading progress and informaiton")
-        #self.info = QTextEdit()
-        #self.info.setReadOnly(True)
-        #self.info.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
-        self.info = QTextEditLogger(self)
         infolayout.addWidget(self.infolabel)
-        infolayout.addWidget(self.info.widget)
+        
+        # Approach 1
+        #self.info = QTextEditLogger(self)
+        #infolayout.addWidget(self.info.widget)
+        
+        # Approach 2
+        self.info = QTextEdit()
+        self.info.setReadOnly(True)
+        self.info.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
+        infolayout.addWidget(self.info)
         infolayout.addWidget(QLabel("--------------------------------"))
         infowidget = QWidget()
         infowidget.setLayout(infolayout)
         
         #Progress bar
         progLabel = QLabel("File Upload Progress")
-        self.prog_bar = QProgressBar()
-        self.prog_bar.setGeometry(50, 100, 250, 30)
-        self.prog_bar.setValue(0)
-        progresslayout.addWidget(progLabel)
-        progresslayout.addWidget(self.prog_bar)
-        progresswidget = QWidget()
-        progresswidget.setLayout(progresslayout)
+        #self.prog_bar = UploadProgressBar()
+        #self.prog_bar = QProgressBar()
+        #self.prog_bar.setGeometry(50, 100, 250, 30)
+        #self.prog_bar.setValue(0)
+       # progresslayout.addWidget(progLabel)
+        #progresslayout.addWidget(self.prog_bar)
+        #progresswidget = QWidget()
+        #progresswidget.setLayout(progresslayout)
         
         
         mainWidget = QWidget()
@@ -164,7 +195,7 @@ class GuiUploader(object):
         mainLayout.addWidget(configInfo)
         mainLayout.addWidget(step4Widget)
         mainLayout.addWidget(infowidget)
-        mainLayout.addWidget(progresswidget)
+        #mainLayout.addWidget(progresswidget)
         #mainLayout.addWidget(self.cliInfo)
         mainLayout.addWidget(buttonwidget)
         #mainLayout.addWidget(self.commandLine)
